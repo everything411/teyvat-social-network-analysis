@@ -120,6 +120,15 @@ def generate_html_report(output_dir, analysis_results):
             community_svg = f.read()
     except:
         community_svg = "<p>社区结构图未生成</p>"
+
+    # 读取社区发现信息
+    community_info = ""
+    community_file = os.path.join(output_dir, "communities.txt")
+    if os.path.exists(community_file):
+        with open(community_file, 'r', encoding='utf-8') as f:
+            community_info = "<pre>" + f.read() + "</pre>"
+    else:
+        community_info = "<p>社区发现未生成</p>"
     
     try:
         with open(os.path.join(output_dir, "core_periphery.svg"), 'r', encoding='utf-8') as f:
@@ -287,6 +296,9 @@ def generate_html_report(output_dir, analysis_results):
         <div class="chart">
             {community_svg}
         </div>
+
+        <h3>社区发现</h3>
+        {community_info}
         
         <h3>最大社区成员</h3>
         <p>{", ".join(analysis_results['communities'][0][1][:20])}...</p>
