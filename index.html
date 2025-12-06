@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>提瓦特角色关系网络分析器</title>
 <style>
-:root{--bg-color:#f4f7f9;--card-bg:#fff;--primary-text:#333;--secondary-text:#666;--border-color:#e0e0e0;--accent-color:#007bff;--accent-hover:#0056b3}
+:root{--bg-color:#f4f7f9;--card-bg:#fff;--primary-text:#333;--secondary-text:#666;--border-color:#e0e0e0;--accent-color:#007bff;--accent-hover:#0056b3;--highlight-color:#ff6f00}
 body{font-family:'Helvetica Neue',Arial,'Hiragino Sans GB','Microsoft YaHei',sans-serif;background-color:var(--bg-color);color:var(--primary-text);line-height:1.6;margin:0;padding:20px}
 .container{max-width:1600px;margin:auto;display:flex;flex-direction:column;gap:20px}
 .card{background-color:var(--card-bg);border:1px solid var(--border-color);border-radius:12px;padding:25px;box-shadow:0 4px 12px rgba(0,0,0,.05)}
@@ -14,6 +14,9 @@ h1{font-size:2em}h2{font-size:1.5em}h3{font-size:1.2em;border-bottom:none}
 button{padding:12px 25px;font-size:16px;font-weight:bold;background-color:var(--accent-color);color:#fff;border:none;border-radius:8px;cursor:pointer;transition:background-color .2s ease,transform .1s ease}
 button:disabled{background-color:#ccc;cursor:not-allowed}
 button:not(:disabled):hover{background-color:var(--accent-hover);transform:translateY(-1px)}
+select{padding:10px;font-size:16px;border-radius:8px;border:1px solid var(--border-color);margin-right:10px}
+.pathfinder-container{display:flex;align-items:center;gap:15px;flex-wrap:wrap}
+#path-result{margin-top:15px;font-weight:bold;color:var(--accent-color)}
 .output-container{display:grid;grid-template-columns:3fr 2fr;gap:20px;min-height:80vh}
 #network-visualization{width:100%;height:800px;background-color:#222;border:1px solid #d3d3d3;position:relative}
 .analysis-panel{overflow-y:auto;height:80vh;padding-right:15px}
@@ -34,8 +37,15 @@ th{background-color:#f9f9f9;font-weight:bold}
 </head>
 <body>
 <div class="container">
-  <div class="card"><h1>提瓦特角色关系网络分析器</h1></div>
   <div id="output-section" class="card">
+    <h1>提瓦特角色关系网络分析器</h1>
+    <h3>查找角色间的最短路径</h3>
+    <div class="pathfinder-container">
+      <label>从: <select id="start-node-select"></select></label>
+      <label>到: <select id="end-node-select"></select></label>
+      <button id="find-path-btn" disabled>查找路径</button>
+    </div>
+    <div id="path-result"></div>
     <div class="output-container">
       <div id="network-visualization"></div>
       <div id="analysis-results" class="analysis-panel"></div>
@@ -48,6 +58,13 @@ import louvain from 'https://cdn.jsdelivr.net/npm/graphology-communities-louvain
 import betweennessCentrality from 'https://cdn.jsdelivr.net/npm/graphology-metrics/centrality/betweenness.js/+esm';
 import { Network } from 'https://cdn.jsdelivr.net/npm/vis-network/peer/esm/vis-network.min.js/+esm';
 import { DataSet } from 'https://cdn.jsdelivr.net/npm/vis-data@8.0.3/peer/esm/vis-data.js/+esm';
+// START: 新增的BFS算法库导入
+import { bidirectional } from 'https://cdn.jsdelivr.net/npm/graphology-shortest-path/+esm';
+// END: 新增的BFS算法库导入
+
+// START: 提升部分变量作用域，以便在多个函数中访问
+let graph, network, nodes, edges;
+// END: 提升变量作用域
 
 const resultsDiv = document.getElementById('analysis-results');
 const vizContainer = document.getElementById('network-visualization');
@@ -70,7 +87,7 @@ function loadAvatarIdToName(avatarData, textMap) {
 }
 
 function buildMentionGraph(fettersData, textMap, avatarIdToName) {
-  const graph = new Graph({ type: 'directed' });
+  graph = new Graph({ type: 'directed' }); // 修改：使用提升作用域的变量
   const aliasMap = {"仆人":"阿蕾奇诺","公子":"达达利亚","散兵":"流浪者","小吉祥草王":"纳西妲","将军":"雷电将军","神子":"八重神子"};
   const allAvatarNames = new Set(Object.values(avatarIdToName));
   const allMentionNames = new Set([...allAvatarNames, ...Object.keys(aliasMap)]);
@@ -88,7 +105,7 @@ function buildMentionGraph(fettersData, textMap, avatarIdToName) {
         const mentionedName = aliasMap[name] || name;
         if (allAvatarNames.has(mentionedName)) {
           graph.mergeNode(mentionedName);
-          graph.mergeEdge(speakerName, mentionedName);
+          graph.mergeDirectedEdge(speakerName, mentionedName); // 使用有向边
         }
       }
     });
@@ -97,6 +114,7 @@ function buildMentionGraph(fettersData, textMap, avatarIdToName) {
 }
 
 function analyzeGraph(graph) {
+  // ... (此函数内容不变)
   const inDegrees = [], outDegrees = [];
   graph.forEachNode(node => {
     inDegrees.push({ id: node, degree: graph.inDegree(node) });
@@ -123,7 +141,7 @@ function analyzeGraph(graph) {
   };
 }
 
-function renderResults(results) {
+function renderResults(results) { /* ... (此函数内容不变) */
   resultsDiv.innerHTML = `
     <h2>分析报告</h2>
     <h3>基本指标</h3>
@@ -145,7 +163,7 @@ function renderResults(results) {
     </ul>`;
 }
 
-function createCentralityTable(title, data, valueKey, valueLabel) {
+function createCentralityTable(title, data, valueKey, valueLabel) { /* ... (此函数内容不变) */
   return `<h3>${title}</h3>
     <table>
       <tr><th>排名</th><th>角色</th><th>${valueLabel}</th></tr>
@@ -155,7 +173,8 @@ function createCentralityTable(title, data, valueKey, valueLabel) {
 }
 
 function renderVisualization(graph) {
-  const nodes = new DataSet(), edges = new DataSet();
+  nodes = new DataSet(); // 修改：使用提升作用域的变量
+  edges = new DataSet(); // 修改：使用提升作用域的变量
   graph.forEachNode((node, attrs) => {
     nodes.add({
       id: node,
@@ -165,11 +184,12 @@ function renderVisualization(graph) {
     });
   });
   graph.forEachEdge((edge, attrs, source, target) => {
-    edges.add({ from: source, to: target, arrows: 'to' });
+    // 为边添加唯一ID，方便后续高亮操作
+    edges.add({ id: `${source}->${target}`, from: source, to: target, arrows: 'to' });
   });
   const options = {
-    edges: { color: { inherit: true }, smooth: { enabled: true, type: "dynamic" } },
-    interaction: { dragNodes: true },
+    edges: { color: { inherit: 'from' }, smooth: { enabled: true, type: "dynamic" } },
+    interaction: { dragNodes: true, hover: true },
     physics: {
       enabled: true,
       solver: 'barnesHut',
@@ -177,8 +197,111 @@ function renderVisualization(graph) {
       stabilization: { enabled: true, iterations: 100, fit: true }
     }
   };
-  new Network(vizContainer, { nodes, edges }, options);
+  network = new Network(vizContainer, { nodes, edges }, options); // 修改：使用提升作用域的变量
 }
+
+// START: 新增的路径查找相关函数
+function populatePathfinderDropdowns(graph) {
+  const startSelect = document.getElementById('start-node-select');
+  const endSelect = document.getElementById('end-node-select');
+  const findBtn = document.getElementById('find-path-btn');
+
+  const nodeNames = graph.nodes().sort(); // 按字母排序
+  startSelect.innerHTML = '';
+  endSelect.innerHTML = '';
+
+  nodeNames.forEach(name => {
+    startSelect.add(new Option(name, name));
+    endSelect.add(new Option(name, name));
+  });
+
+  if (nodeNames.length > 1) {
+    endSelect.selectedIndex = 1; // 默认选中第二个，避免起点终点相同
+    findBtn.disabled = false;
+  }
+}
+
+function resetVisualizationStyles() {
+    // 移除所有节点的特定颜色，使其恢复由group决定的默认颜色
+    const nodeUpdates = nodes.getIds().map(id => ({
+        id: id,
+        color: undefined,
+        font: undefined,
+    }));
+    nodes.update(nodeUpdates);
+
+    // 移除所有边的特定颜色和宽度
+    const edgeUpdates = edges.getIds().map(id => ({
+        id: id,
+        color: undefined,
+        width: undefined,
+    }));
+    edges.update(edgeUpdates);
+}
+
+
+function highlightPath(path) {
+    resetVisualizationStyles(); // 先重置所有样式
+    if (!path) return;
+
+    // 调暗所有节点和边
+    const allNodes = nodes.getIds().map(id => ({ id: id, color: 'rgba(200,200,200,0.5)'}));
+    nodes.update(allNodes);
+    const allEdges = edges.getIds().map(id => ({ id: id, color: 'rgba(200,200,200,0.3)'}));
+    edges.update(allEdges);
+
+    // 高亮路径上的节点
+    const pathNodeUpdates = path.map(nodeId => ({
+        id: nodeId,
+        color: { background: 'rgba(200,0,0,1)', border: 'var(--highlight-color)' },
+        font: { size: 40, color: '#fff' }
+    }));
+    nodes.update(pathNodeUpdates);
+
+    // 高亮路径上的边
+    const pathEdgeUpdates = [];
+    for (let i = 0; i < path.length - 1; i++) {
+        const source = path[i];
+        const target = path[i+1];
+        pathEdgeUpdates.push({
+            id: `${source}->${target}`, // 使用我们之前定义的唯一ID
+            color: { color: 'rgba(200,0,0,1)', highlight: 'var(--highlight-color)' },
+            width: 3
+        });
+    }
+    edges.update(pathEdgeUpdates);
+}
+
+function setupPathfinder() {
+    const startSelect = document.getElementById('start-node-select');
+    const endSelect = document.getElementById('end-node-select');
+    const findBtn = document.getElementById('find-path-btn');
+    const resultDiv = document.getElementById('path-result');
+
+    findBtn.addEventListener('click', () => {
+        const startNode = startSelect.value;
+        const endNode = endSelect.value;
+
+        if (startNode === endNode) {
+            resultDiv.textContent = '错误：起点和终点不能相同。';
+            resetVisualizationStyles();
+            return;
+        }
+
+        // 使用 graphology 的 bfs 查找路径
+        const path = bidirectional(graph, startNode, endNode);
+
+        if (path) {
+            resultDiv.textContent = `路径找到 (${path.length-1} 步): ${path.join(' → ')}`;
+            highlightPath(path);
+        } else {
+            resultDiv.textContent = `从 ${startNode} 到 ${endNode} 未找到直接关系路径。`;
+            resetVisualizationStyles();
+        }
+    });
+}
+// END: 新增的路径查找相关函数
+
 
 async function main() {
   try {
@@ -188,10 +311,17 @@ async function main() {
       fetchAndDecompress('./FettersExcelConfigData.json.gz')
     ]);
     const avatarIdToName = loadAvatarIdToName(avatarData, textMapData);
-    const graph = buildMentionGraph(fettersData, textMapData, avatarIdToName);
-    const analysisResults = analyzeGraph(graph);
+    const graphInstance = buildMentionGraph(fettersData, textMapData, avatarIdToName);
+    const analysisResults = analyzeGraph(graphInstance);
+
     renderResults(analysisResults);
-    setTimeout(() => renderVisualization(graph), 100);
+
+    // START: 修改的调用顺序和新增的调用
+    populatePathfinderDropdowns(graphInstance);
+    setupPathfinder();
+    // END: 修改的调用顺序和新增的调用
+
+    setTimeout(() => renderVisualization(graphInstance), 100);
   } catch (error) {
     resultsDiv.innerHTML = `<p style="color:#d9534f"><strong>错误:</strong> ${error.message}</p>`;
     console.error(error);
