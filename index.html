@@ -82,10 +82,44 @@ function loadAvatarIdToName(avatarData, textMap) {
   return avatarIdToName;
 }
 
+function removeItemsFromSet(set, keywords) {
+  const itemsToRemove = [];
+  for (const item of set) {
+    if (keywords.some(keyword => item.includes(keyword))) {
+      itemsToRemove.push(item);
+    }
+  }
+  itemsToRemove.forEach(item => set.delete(item));
+  return set;
+}
+
 function buildMentionGraph(fettersData, textMap, avatarIdToName) {
-  graph = new Graph({ type: 'directed' }); // 修改：使用提升作用域的变量
-  const aliasMap = {"仆人":"阿蕾奇诺","公子":"达达利亚","散兵":"流浪者","小吉祥草王":"纳西妲","将军":"雷电将军","神子":"八重神子","国崩":"流浪者"};
+  graph = new Graph({ type: 'directed' });
+  const aliasMap = {
+  "摩拉克斯": "钟离",
+  "岩王帝君": "钟离",
+  "岩之神": "钟离",
+  "雷之神": "雷电将军",
+  "布耶尔": "纳西妲",
+  "小吉祥草王": "纳西妲",
+  "草之神": "纳西妲",
+  "赫布里穆": "玛薇卡",
+  "白马仙人": "兹白",
+  "风之神": "温迪",
+  "「少女」": "哥伦比娅",
+  "「仆人」": "阿蕾奇诺",
+  "「父亲」": "阿蕾奇诺",
+  "「木偶」": "桑多涅",
+  "「散兵」": "流浪者",
+  "国崩": "流浪者",
+  "「公子」": "达达利亚",
+  "狐耳女人": "八重神子",
+  "「库塔尔」": "哥伦比娅",
+  "火神大人": "玛薇卡",
+  "火之神": "玛薇卡"
+};
   const allAvatarNames = new Set(Object.values(avatarIdToName));
+  removeItemsFromSet(allAvatarNames, ["测试", "试用", "奇偶", "UGC", "少女", "裸", "男主", "女主", "白盒", "阿葵丽雅", "凯特", "成女"]);
   const allMentionNames = new Set([...allAvatarNames, ...Object.keys(aliasMap)]);
 
   fettersData.forEach(voiceEntry => {
