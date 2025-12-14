@@ -58,13 +58,9 @@ import louvain from 'https://cdn.jsdelivr.net/npm/graphology-communities-louvain
 import betweennessCentrality from 'https://cdn.jsdelivr.net/npm/graphology-metrics/centrality/betweenness.js/+esm';
 import { Network } from 'https://cdn.jsdelivr.net/npm/vis-network/peer/esm/vis-network.min.js/+esm';
 import { DataSet } from 'https://cdn.jsdelivr.net/npm/vis-data@8.0.3/peer/esm/vis-data.js/+esm';
-// START: 新增的BFS算法库导入
 import { bidirectional } from 'https://cdn.jsdelivr.net/npm/graphology-shortest-path/+esm';
-// END: 新增的BFS算法库导入
 
-// START: 提升部分变量作用域，以便在多个函数中访问
 let graph, network, nodes, edges;
-// END: 提升变量作用域
 
 const resultsDiv = document.getElementById('analysis-results');
 const vizContainer = document.getElementById('network-visualization');
@@ -88,7 +84,7 @@ function loadAvatarIdToName(avatarData, textMap) {
 
 function buildMentionGraph(fettersData, textMap, avatarIdToName) {
   graph = new Graph({ type: 'directed' }); // 修改：使用提升作用域的变量
-  const aliasMap = {"仆人":"阿蕾奇诺","公子":"达达利亚","散兵":"流浪者","小吉祥草王":"纳西妲","将军":"雷电将军","神子":"八重神子"};
+  const aliasMap = {"仆人":"阿蕾奇诺","公子":"达达利亚","散兵":"流浪者","小吉祥草王":"纳西妲","将军":"雷电将军","神子":"八重神子","国崩":"流浪者"};
   const allAvatarNames = new Set(Object.values(avatarIdToName));
   const allMentionNames = new Set([...allAvatarNames, ...Object.keys(aliasMap)]);
 
@@ -114,7 +110,6 @@ function buildMentionGraph(fettersData, textMap, avatarIdToName) {
 }
 
 function analyzeGraph(graph) {
-  // ... (此函数内容不变)
   const inDegrees = [], outDegrees = [];
   graph.forEachNode(node => {
     inDegrees.push({ id: node, degree: graph.inDegree(node) });
@@ -141,7 +136,7 @@ function analyzeGraph(graph) {
   };
 }
 
-function renderResults(results) { /* ... (此函数内容不变) */
+function renderResults(results) {
   resultsDiv.innerHTML = `
     <h2>分析报告</h2>
     <h3>基本指标</h3>
@@ -163,7 +158,7 @@ function renderResults(results) { /* ... (此函数内容不变) */
     </ul>`;
 }
 
-function createCentralityTable(title, data, valueKey, valueLabel) { /* ... (此函数内容不变) */
+function createCentralityTable(title, data, valueKey, valueLabel) {
   return `<h3>${title}</h3>
     <table>
       <tr><th>排名</th><th>角色</th><th>${valueLabel}</th></tr>
@@ -173,8 +168,8 @@ function createCentralityTable(title, data, valueKey, valueLabel) { /* ... (此�
 }
 
 function renderVisualization(graph) {
-  nodes = new DataSet(); // 修改：使用提升作用域的变量
-  edges = new DataSet(); // 修改：使用提升作用域的变量
+  nodes = new DataSet();
+  edges = new DataSet();
   graph.forEachNode((node, attrs) => {
     nodes.add({
       id: node,
@@ -197,10 +192,9 @@ function renderVisualization(graph) {
       stabilization: { enabled: true, iterations: 100, fit: true }
     }
   };
-  network = new Network(vizContainer, { nodes, edges }, options); // 修改：使用提升作用域的变量
+  network = new Network(vizContainer, { nodes, edges }, options); 
 }
 
-// START: 新增的路径查找相关函数
 function populatePathfinderDropdowns(graph) {
   const startSelect = document.getElementById('start-node-select');
   const endSelect = document.getElementById('end-node-select');
@@ -300,7 +294,6 @@ function setupPathfinder() {
         }
     });
 }
-// END: 新增的路径查找相关函数
 
 
 async function main() {
@@ -316,10 +309,8 @@ async function main() {
 
     renderResults(analysisResults);
 
-    // START: 修改的调用顺序和新增的调用
     populatePathfinderDropdowns(graphInstance);
     setupPathfinder();
-    // END: 修改的调用顺序和新增的调用
 
     setTimeout(() => renderVisualization(graphInstance), 100);
   } catch (error) {
