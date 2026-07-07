@@ -65,12 +65,10 @@ let graph, network, nodes, edges;
 const resultsDiv = document.getElementById('analysis-results');
 const vizContainer = document.getElementById('network-visualization');
 
-async function fetchAndDecompress(url) {
+async function fetchJSON(url) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`加载失败: ${url}`);
-  const blob = await res.blob();
-  const decompressed = await new Response(blob.stream().pipeThrough(new DecompressionStream('gzip'))).blob();
-  return JSON.parse(await decompressed.text());
+  return res.json();
 }
 
 function loadAvatarIdToName(avatarData, textMap) {
@@ -333,9 +331,9 @@ function setupPathfinder() {
 async function main() {
   try {
     const [textMapData, avatarData, fettersData] = await Promise.all([
-      fetchAndDecompress('./TextMapCHS.json.gz'),
-      fetchAndDecompress('./AvatarExcelConfigData.json.gz'),
-      fetchAndDecompress('./FettersExcelConfigData.json.gz')
+      fetchJSON('./TextMap_MediumCHS_Trimmed.json'),
+      fetchJSON('./AvatarExcelConfigData_Trimmed.json'),
+      fetchJSON('./FettersExcelConfigData_Trimmed.json')
     ]);
     const avatarIdToName = loadAvatarIdToName(avatarData, textMapData);
     const graphInstance = buildMentionGraph(fettersData, textMapData, avatarIdToName);
